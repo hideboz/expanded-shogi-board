@@ -264,6 +264,10 @@ function clickSetUra() {
     rightClickMenu.hideMenu();
 }
 
+const viewBoxHeightEdit = 1110; // SVGの viewBox の高さ (編集モード)
+const viewBoxHeightPlay = 980; // SVGの viewBox の高さ (操作モード)
+const viewBoxHeight = ref(viewBoxHeightEdit); // SVGの viewBox の高さ
+const viewBoxWidth = 1190; // SVGの viewBox の幅 (幅は変化しない)
 const boardWidth = ref("100%");  // 将棋盤の幅
 const editFlag = ref(true); // 使わない駒置き場を表示するかどうか
 
@@ -272,6 +276,8 @@ function changeToEditMode() {
     if (!editFlag.value) {
         editFlag.value = true;
     }
+
+    viewBoxHeight.value = viewBoxHeightEdit;
 }
 
 // 操作モードに変更
@@ -279,6 +285,8 @@ function changeToPlayMode() {
     if (editFlag.value) {
         editFlag.value = false;
     }
+
+    viewBoxHeight.value = viewBoxHeightPlay;
 }
 
 // divの大きさをセットする
@@ -288,27 +296,6 @@ function setTopDivSize(): void {
     const minWH = (w < h) ? w : h;
 
     boardWidth.value = `${minWH}px`;
-
-    // const elem = document.getElementById("svg-top");
-    // 
-    // if (elem) {
-    //     elem.style.width = `${minWH}px`;
-    //     elem.style.height = `${minWH}px`;
-    // }
-
-    // const elem1 = document.getElementById("svg-board");
-
-    // if (elem1) {
-    //     elem1.style.width = `${minWH}px`;
-    //     // elem1.style.height = `${minWH}px`;
-    // }
-
-    // const elem2 = document.getElementById("svg-gomibako");
-
-    // if (elem2) {
-    //     elem2.style.width = `${minWH}px`;
-    //     // elem2.style.height = `${minWH}px`;
-    // }
 }
 
 // コンポーネントがマウントされる直前に呼び出されるフックを登録
@@ -330,7 +317,8 @@ onMounted(() => {
     <div class="container-fluid p-0">
         <div class="row">
             <div class="col text-center">
-                <svg id="svg-board" :width="boardWidth" viewBox="0 0 1190 980" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet">
+                <svg id="svg-board" :width="boardWidth" :viewBox="`0 0 ${viewBoxWidth} ${viewBoxHeight}`"
+                    xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet">
 
                     <defs>
                         <g id="stars" style="stroke: black; fill: black;">
@@ -477,36 +465,33 @@ onMounted(() => {
                         </g>
                     </g>
 
-                </svg>
+                    <!-- 使わない駒置き場 -->
+                    <g v-if="editFlag" transform="translate(0, 980)">
+                        <rect width="1190" height="130" style="fill: #8b968d;" />
+                        <g transform="translate(130, 0)">
+                            <rect width="920" height="100" style="fill: #f7c167;" />
+                            <rect @click="clickGomibako" width="920" height="100" class="square" x="0" y="0" />
 
-                <!-- 使わない駒置き場 -->
-                <svg v-if="editFlag" id="svg-gomibako" :width="boardWidth" viewBox="0 0 1190 130"
-                    xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet">
-                    <rect width="1190" height="130" style="fill: #8b968d;" />
-                    <g transform="translate(130, 0)">
-                        <rect width="920" height="100" style="fill: #f7c167;" />
-                        <rect @click="clickGomibako" width="920" height="100" class="square" x="0" y="0" />
+                            <!-- ゴミ箱アイコン -->
+                            <use href="#Gomibako" x="-30" y="0" width="60" height="60" style="fill: #666666;" />
 
-                        <!-- ゴミ箱アイコン -->
-                        <use href="#Gomibako" x="-30" y="0" width="60" height="60" style="fill: #666666;" />
+                            <g transform="translate(40, 0)">
+                                <!-- 駒 -->
+                                <use width="80" height="80" v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()"
+                                    :x="idx * 80" y="10" :href="k.getSymbolid()" />
 
-                        <g transform="translate(40, 0)">
-                            <!-- 駒 -->
-                            <use width="80" height="80" v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()"
-                                :x="idx * 80" y="10" :href="k.getSymbolid()" />
+                                <!-- 各駒の個数 -->
+                                <g style="text-anchor: middle; font-size: 30px; font-weight: bold; stroke: white; fill: red;">
+                                    <text v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()" :x="idx * 80 + 40" y="100">{{ k.getN() > 1 ? k.getN() : '' }}</text>
+                                </g>
 
-                            <!-- 各駒の個数 -->
-                            <g style="text-anchor: middle; font-size: 30px; font-weight: bold; stroke: white; fill: red;">
-                                <text v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()" :x="idx * 80 + 40"
-                                    y="100">{{
-                                        k.getN() > 1 ? k.getN() : '' }}</text>
+                                <!-- 駒の場所のマス -->
+                                <rect v-for="(k, idx) in gomibakoKomaList.getList()" @click="clickGomibakoKoma($event, idx)"
+                                    width="80" height="80" class="square" :key="k.getKey()" :x="idx * 80" y="10" />
                             </g>
-
-                            <!-- 駒の場所のマス -->
-                            <rect v-for="(k, idx) in gomibakoKomaList.getList()" @click="clickGomibakoKoma($event, idx)"
-                                width="80" height="80" class="square" :key="k.getKey()" :x="idx * 80" y="10" />
                         </g>
                     </g>
+
                 </svg>
             </div>
 
@@ -542,5 +527,6 @@ onMounted(() => {
     fill-opacity: 0.4;
     fill: yellow;
     transition-property: none;
-}</style>
+}
+</style>
         ./boardCommon.js
