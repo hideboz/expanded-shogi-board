@@ -382,6 +382,32 @@ onMounted(() => {
                         </g>
                     </g>
 
+                    <!-- 使わない駒置き場 -->
+                    <g v-if="editFlag" transform="translate(0, 980)">
+                        <rect width="1190" height="130" style="fill: #8b968d;" />
+                        <g transform="translate(130, 0)">
+                            <rect width="920" height="100" style="fill: #f7c167;" />
+                            <rect @click="clickGomibako" width="920" height="100" class="square" x="0" y="0" />
+
+                            <!-- ゴミ箱アイコン -->
+                            <use href="#Gomibako" x="-30" y="0" width="60" height="60" style="fill: #666666;" />
+
+                            <g transform="translate(40, 0)">
+                                <!-- 駒 -->
+                                <use width="80" height="80" v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()"
+                                    :x="idx * 80" y="10" :href="k.getSymbolid()" />
+
+                                <!-- 各駒の個数 -->
+                                <g style="text-anchor: middle; font-size: 30px; font-weight: bold; stroke: white; fill: red;">
+                                    <text v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()" :x="idx * 80 + 40" y="100">{{ k.getN() > 1 ? k.getN() : '' }}</text>
+                                </g>
+
+                                <!-- 駒の場所のマス -->
+                                <rect v-for="(k, idx) in gomibakoKomaList.getList()" @click="clickGomibakoKoma($event, idx)"
+                                    width="80" height="80" class="square" :key="k.getKey()" :x="idx * 80" y="10" />
+                            </g>
+                        </g>
+                    </g>
 
                     <!-- 段の数字 -->
                     <g id="numbers-row" transform="translate(190, 30)"
@@ -440,7 +466,7 @@ onMounted(() => {
 
                     <!-- 駒を右クリックしたときに表示されるメニュー -->
                     <rect v-if="rightClickMenu.getDisplay()" @click="rightClickMenu.hideMenu()"
-                        @click.right.prevent="rightClickMenu.hideMenu()" x="0" y="0" width="1190" height="1190"
+                        @click.right.prevent="rightClickMenu.hideMenu()" x="0" y="0" :width="viewBoxWidth" :height="viewBoxHeight"
                         style="fill: #8b968d; fill-opacity: 0.7;" />
                     <g transform="translate(140, 40)">
                         <g v-if="rightClickMenu.getDisplay()"
@@ -461,33 +487,6 @@ onMounted(() => {
                                     <use width="100" height="100" :href="rightClickMenu.getKomaSengoGyakuId()" />
                                     <rect width="100" height="100" class="square" @click="clickSetSengoGyaku" />
                                 </g>
-                            </g>
-                        </g>
-                    </g>
-
-                    <!-- 使わない駒置き場 -->
-                    <g v-if="editFlag" transform="translate(0, 980)">
-                        <rect width="1190" height="130" style="fill: #8b968d;" />
-                        <g transform="translate(130, 0)">
-                            <rect width="920" height="100" style="fill: #f7c167;" />
-                            <rect @click="clickGomibako" width="920" height="100" class="square" x="0" y="0" />
-
-                            <!-- ゴミ箱アイコン -->
-                            <use href="#Gomibako" x="-30" y="0" width="60" height="60" style="fill: #666666;" />
-
-                            <g transform="translate(40, 0)">
-                                <!-- 駒 -->
-                                <use width="80" height="80" v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()"
-                                    :x="idx * 80" y="10" :href="k.getSymbolid()" />
-
-                                <!-- 各駒の個数 -->
-                                <g style="text-anchor: middle; font-size: 30px; font-weight: bold; stroke: white; fill: red;">
-                                    <text v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()" :x="idx * 80 + 40" y="100">{{ k.getN() > 1 ? k.getN() : '' }}</text>
-                                </g>
-
-                                <!-- 駒の場所のマス -->
-                                <rect v-for="(k, idx) in gomibakoKomaList.getList()" @click="clickGomibakoKoma($event, idx)"
-                                    width="80" height="80" class="square" :key="k.getKey()" :x="idx * 80" y="10" />
                             </g>
                         </g>
                     </g>
