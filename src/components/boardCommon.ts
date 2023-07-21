@@ -255,6 +255,8 @@ class Koma {
     getKey() { return this.symbolid; }
 
     isSente() { return this.senteFlag; }
+    isNari() { return this.nariFlag; }  // 成った状態かどうか
+    isFunari() { return (! this.nariFlag); }  // 不成りの状態かどうか
     toString() { return this.getSymbolid(); }
 }
 
@@ -284,6 +286,21 @@ class BanKoma {
     getMasu() { return this.masu; }
     getSuji() { return this.masu.getSuji(); }
     getDan() { return this.masu.getDan(); }
+
+    hasUra() { return this.koma.hasUra(); }
+    isFunari() { return this.koma.isFunari(); }
+
+    // preClickMasu から現在の masu に移動するとき、成れるかどうか
+    canNari(preClickMasu: Masu) {
+        if (this.hasUra() && this.isFunari()) {
+            if (this.isSente()) {
+                return ((this.getDan() <= 3) || (preClickMasu.getDan() <= 3));
+            } else {
+                return ((this.getDan() >= 7) || (preClickMasu.getDan() >= 7));
+            }
+        }
+        return false;
+    }
 
     toString() { return `${this.masu.getSuji()}-${this.masu.getDan()}-${this.koma.toString()}`; }
 }
@@ -321,8 +338,8 @@ class BanKomaList {
         if (this.hasKomaAt(nowMasu)) {
             let torareKoma = null;
             if (this.hasKomaAt(nextMasu)) {
-                const moveKoma = this.getKoma(nowMasu); // 移動する駒
-                torareKoma = this.getKoma(nextMasu); // 移動先にある駒
+                const moveKoma = this.getBanKoma(nowMasu)?.getKoma(); // 移動する駒
+                torareKoma = this.getBanKoma(nextMasu)?.getKoma(); // 移動先にある駒
 
                 if (moveKoma && torareKoma && (moveKoma.isSente() === torareKoma.isSente())) {
                     // console.log("味方の駒がある場所には移動できません。"); // debug
@@ -344,10 +361,10 @@ class BanKomaList {
         }
     }
 
-    getKoma(masu: Masu) {
+    getBanKoma(masu: Masu): BanKoma | null {
         const idx = this.getIndexAt(masu);
         if (idx != -1) {
-            return this.getList()[idx].getKoma();
+            return this.getList()[idx];
         }
         return null;
     }
@@ -388,12 +405,12 @@ class BanKomaList {
 
     // ひとつ前にクリックされた駒を削除して返す
     pickPreClickKoma() {
-        let koma = null;
+        let banKoma = null;
         if (this.preClickMasu) {
-            koma = this.getKoma(this.preClickMasu);
+            banKoma = this.getBanKoma(this.preClickMasu);
             this.remove(this.preClickMasu);
         }
-        return koma;
+        return banKoma;
     }
 
     // 他にどこもクリックされていない状態で、新たにクリックされた場合の処理

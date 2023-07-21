@@ -40,14 +40,19 @@ class RightClickMenu {
 
     // メニューの位置とマスと駒をセットする。
     set(targetElem: HTMLElement, masu: board.Masu, koma: board.Koma) {
-        this.x.value = Number(targetElem.getAttribute("x")) + 100;
-        this.y.value = Number(targetElem.getAttribute("y")) - 10;
+        this.x.value = Number(targetElem.getAttribute("x")) + 100 + 140;
+        this.y.value = Number(targetElem.getAttribute("y")) - 10 + 40;
 
         this.masu = masu;
 
         // 先後逆にした駒の symbolid をセット
         this.komaSengoGyaku = koma.getCopy();
-        this.komaSengoGyaku.toSengoGyaku();
+
+        // 操作モードでは、そのままの駒を表示する
+        if (editFlag.value) {
+            this.komaSengoGyaku.toSengoGyaku();
+        }   
+
         this.komaSengoGyakuId.value = this.komaSengoGyaku.getSymbolid();
 
         // 裏側のある駒ならば、裏にした駒の symbolid をセット
@@ -111,7 +116,7 @@ function clickSenteKomadai() {
     if (editFlag.value) {
         if (banKomaList.wasClicked()) {
             // 盤から駒台に駒を追加
-            const preClickKoma = banKomaList.pickPreClickKoma();
+            const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
             if (preClickKoma) {
                 senteMochiKomaList.add(preClickKoma);
             }
@@ -132,7 +137,7 @@ function clickGoteKomadai() {
     if (editFlag.value) {
         if (banKomaList.wasClicked()) {
             // 盤から駒台に駒を追加
-            const preClickKoma = banKomaList.pickPreClickKoma();
+            const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
             if (preClickKoma) {
                 goteMochiKomaList.add(preClickKoma);
             }
@@ -164,7 +169,7 @@ function clickGoteMochiKoma(event: Event, index: number) {
 function clickGomibako() {
     if (banKomaList.wasClicked()) {
         // 駒台に駒を追加
-        const preClickKoma = banKomaList.pickPreClickKoma();
+        const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
         if (preClickKoma) {
             gomibakoKomaList.add(preClickKoma);
         }
@@ -191,18 +196,27 @@ function clickMasu(event: Event, masu: board.Masu) {
     if (banKomaList.wasClicked()) {
         const preClickMasu = banKomaList.getPreClickMasu();
         if (preClickMasu && (!masu.equal(preClickMasu))) { // 違うマスがクリックされた場合
-            const moveKoma = banKomaList.getKoma(preClickMasu); // 移動する駒
+            const moveBanKoma = banKomaList.getBanKoma(preClickMasu); // 移動する駒
 
             // 駒を移動 (取った駒が返される)
             const torareKoma = banKomaList.moveTo(preClickMasu, masu);
 
-            if (moveKoma && torareKoma) {
-                if (moveKoma.isSente()) { // 先手が駒を取った場合
+            if (moveBanKoma && torareKoma) {
+                if (moveBanKoma.isSente()) { // 先手が駒を取った場合
                     // 先手の駒台に駒を追加
                     senteMochiKomaList.add(torareKoma);
                 } else { // 後手が駒を取った場合
                     // 後手の駒台に駒を追加
                     goteMochiKomaList.add(torareKoma);
+                }
+            }
+
+            // 操作モードの場合 (moveBanKoma は動いた後のマスにいることに注意)
+            if (! editFlag.value) {
+                if (moveBanKoma?.canNari(preClickMasu)) {
+                    if (event.target) {
+                        rightClickMenu.set(event.target as HTMLElement, masu, moveBanKoma.getKoma());
+                    }
                 }
             }
         }
@@ -236,7 +250,7 @@ function rightClickMasu(event: Event, masu: board.Masu) {
     // 編集モードでのみ有効 
     if (editFlag.value) {
         // クリックされたマス目に駒があればメニューを表示する
-        const koma = banKomaList.getKoma(masu);
+        const koma = banKomaList.getBanKoma(masu)?.getKoma();
         if (koma) {
             if (event.target) {
                 rightClickMenu.set(event.target as HTMLElement, masu, koma);
@@ -477,25 +491,24 @@ onMounted(() => {
                     <rect v-if="rightClickMenu.getDisplay()" @click="rightClickMenu.hideMenu()"
                         @click.right.prevent="rightClickMenu.hideMenu()" x="0" y="0" :width="viewBoxWidth"
                         :height="viewBoxHeight" style="fill: #8b968d; fill-opacity: 0.7;" />
-                    <g transform="translate(140, 40)">
-                        <g v-if="rightClickMenu.getDisplay()"
-                            :transform="'translate(' + rightClickMenu.getX() + ', ' + rightClickMenu.getY() + ')'">
-                            <!-- 裏側 -->
-                            <g transform="translate(0, 0)" v-if="rightClickMenu.hasUra()">
-                                <rect width="120" height="110" style="fill: #666666; fill-opacity: 0.9;" />
-                                <g transform="translate(10, 10)">
-                                    <use width="100" height="100" :href="rightClickMenu.getKomaUraId()" />
-                                    <rect width="100" height="100" class="square" @click="clickSetUra" />
-                                </g>
-                            </g>
 
-                            <!-- 先後逆 -->
-                            <g :transform="'translate(0, ' + (rightClickMenu.hasUra() ? 110 : 0) + ')'">
-                                <rect width="120" height="120" style="fill: #666666; fill-opacity: 0.9;" />
-                                <g transform="translate(10, 10)">
-                                    <use width="100" height="100" :href="rightClickMenu.getKomaSengoGyakuId()" />
-                                    <rect width="100" height="100" class="square" @click="clickSetSengoGyaku" />
-                                </g>
+                    <g v-if="rightClickMenu.getDisplay()"
+                        :transform="`translate(${rightClickMenu.getX()}, ${rightClickMenu.getY()})`">
+                        <!-- 裏側 -->
+                        <g transform="translate(0, 0)" v-if="rightClickMenu.hasUra()">.
+                            <rect width="120" height="110" style="fill: #666666; fill-opacity: 0.9;" />
+                            <g transform="translate(10, 10)">
+                                <use width="100" height="100" :href="rightClickMenu.getKomaUraId()" />
+                                <rect width="100" height="100" class="square" @click="clickSetUra" />
+                            </g>
+                        </g>
+
+                        <!-- 先後逆 -->
+                        <g :transform="'translate(0, ' + (rightClickMenu.hasUra() ? 110 : 0) + ')'">
+                            <rect width="120" height="120" style="fill: #666666; fill-opacity: 0.9;" />
+                            <g transform="translate(10, 10)">
+                                <use width="100" height="100" :href="rightClickMenu.getKomaSengoGyakuId()" />
+                                <rect width="100" height="100" class="square" @click="clickSetSengoGyaku" />
                             </g>
                         </g>
                     </g>
