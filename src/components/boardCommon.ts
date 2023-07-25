@@ -576,4 +576,50 @@ class MochiKomaList {
     }
 }
 
-export { Masu, MasuList, Koma, BanKoma, BanKomaList, MochiKoma, MochiKomaList };
+interface Move {
+    before: BanKoma | MochiKoma;
+    after: BanKoma | MochiKoma;
+}
+
+// 履歴を保存するクラス
+class MoveList {
+    moveList: Move[] = [];
+    lastPosition: number = -1; // 最後に返した位置
+
+    add(newMove: Move) {
+        this.lastPosition += 1;
+
+        // lastPosition が moveList の最後の要素の次を指していなければ
+        // lastPositionより先の履歴を削除
+        if (this.lastPosition < this.moveList.length) {
+            const newList = this.moveList.slice(0, this.lastPosition);
+            this.moveList = newList;
+        }
+
+        this.moveList[this.lastPosition] = newMove;
+    }
+
+    // lastPosition の次の Move を返す
+    getForward() {
+        const newPosition = this.lastPosition + 1;
+        if (newPosition < (this.moveList.length - 1)) {
+            this.lastPosition = newPosition;
+            return this.moveList[newPosition];
+        }
+
+        return null;
+    }
+
+    // lastPosition の Move を返して、lastPosition を decriment
+    getBackward() {
+        if (this.lastPosition != -1) {
+            const position = this.lastPosition;
+            this.lastPosition -= 1;
+            return this.moveList[position];
+        }
+        
+        return null;
+    }
+}
+
+export { Masu, MasuList, Koma, BanKoma, BanKomaList, MochiKoma, MochiKomaList, type Move, MoveList };
