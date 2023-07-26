@@ -65,7 +65,7 @@ class Koma {
 
     constructor(name: string, senteFlag: boolean, nariFlag: boolean) {
         this.name = name; // 駒を表わす文字列 (例: "歩")
-        this.senteFlag = senteFlag; // 先手を示すFlag (false なら後手)
+        this.senteFlag = senteFlag; // 先手を示すFlag (駒の向きに影響する)
         this.nariFlag = nariFlag; // 成りを示すFlag
         this.symbolid = "";  // symbol の id
         this.priority = 0;  // 駒の優先順位 (数字が大きい方が優先)
@@ -471,25 +471,30 @@ class BanKomaList {
 class MochiKoma {
     koma: Koma;
     n: number;
-    senteFlag: boolean;
+    place: "sente" | "gote" | "gomibako" | null = null; // リテラル型
 
-    constructor(koma: Koma, n: number, senteFlag: boolean) {
+    constructor(koma: Koma, n: number, place: "sente" | "gote" | "gomibako") {
         this.koma = new Koma(koma.getName(), true, false); // 持駒はすべて先手の駒と同じ向き
         this.n = n; // 個数
-        this.senteFlag = senteFlag; // 先手の持駒かどうか
+        this.place = place;
     }
 
     inc() { this.n++; }
     dec() { this.n--; }
-
-    isSente() { return this.senteFlag; }
 
     getKey() { return this.koma.getKey(); }
 
     getSymbolid() { return this.koma.getSymbolid(); }
     getName() { return this.koma.getName(); }
 
-    getKoma() { return this.koma.getCopy(); }
+    getKoma() { 
+        const koma = this.koma.getCopy(); 
+        if (this.place == "gote") {
+            koma.toGote();
+        }
+        return koma;
+    }
+
     getN() { return this.n; }
 
     toString() { return `${this.koma.getSymbolid()}-${this.getN()}`; }
@@ -498,19 +503,16 @@ class MochiKoma {
 // すべての持駒を含むクラス (先手、後手別)
 class MochiKomaList {
     reflist: Ref<MochiKoma[]> = ref([]); // MochiKomaクラスのオブジェクトのリスト
-    senteFlag: boolean; // 先手の持駒かどうか
     preClickIndex: number = -1; // ひとつ前にクリックされた持駒の index
     preClickHTMLElem: HTMLElement | null = null; // ひとつ前にクリックされた HTML element
 
-    constructor(senteFlag: boolean) {
-        this.senteFlag = senteFlag; 
-    }
+    constructor() {}
 
-    add(koma: Koma) {
-        const idx = this.getList().findIndex((mk) => koma.getName() === mk.getName());
+    add(mochiKoma: MochiKoma) {
+        const idx = this.getList().findIndex((mk) => mochiKoma.getName() === mk.getName());
 
         if (idx === -1) {
-            this.getList().push(new MochiKoma(koma, 1, this.senteFlag));
+            this.getList().push(mochiKoma);
             this.getList().sort((mk1, mk2) => (mk2.getKoma().getPriority() - mk1.getKoma().getPriority()));
         } else {
             this.getList()[idx].inc();
@@ -526,14 +528,8 @@ class MochiKomaList {
     }
 
     // 盤上に打つときに使うメンバ関数
-    // 後手の持駒を打つときは、後手の向きにする
-    getKoma(idx: number) {
-        const koma = this.getList()[idx].getKoma();
-        if (!this.senteFlag) {
-            koma.toGote();
-        }
-        return koma;
-    }
+    // 駒の向きは MochiKoma.getKoma() が処理してくれる
+    getKoma(idx: number) { return this.getList()[idx].getKoma(); }
 
     getList() { return this.reflist.value; }
 
