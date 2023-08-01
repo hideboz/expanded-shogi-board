@@ -102,6 +102,7 @@ const senteMochiKomaList = new board.MochiKomaList();
 const goteMochiKomaList = new board.MochiKomaList();
 const gomibakoKomaList = new board.MochiKomaList();
 const rightClickMenu = new RightClickMenu();
+const moveList = new board.MoveList();
 
 // 前のクリックをリセットする
 function resetClickAll() {
@@ -118,14 +119,14 @@ function clickSenteKomadai() {
             // 盤から駒台に駒を追加
             const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
             if (preClickKoma) {
-                senteMochiKomaList.add(new board.MochiKoma(preClickKoma, 1, "sente"));
+                senteMochiKomaList.add(new board.BanKoma(preClickKoma, "senteMochiKoma"));
             }
         } else if (goteMochiKomaList.wasClicked()) {
             // 後手の駒台から先手の駒台へ駒を移動
-            senteMochiKomaList.add(new board.MochiKoma(goteMochiKomaList.pickPreClickKoma(), 1, "sente"));
+            senteMochiKomaList.add(new board.BanKoma(goteMochiKomaList.pickPreClickKoma(), "senteMochiKoma"));
         } else if (gomibakoKomaList.wasClicked()) {
             // 使わない駒置き場から先手の駒台へ駒を移動
-            senteMochiKomaList.add(new board.MochiKoma(gomibakoKomaList.pickPreClickKoma(), 1, "sente"));
+            senteMochiKomaList.add(new board.BanKoma(gomibakoKomaList.pickPreClickKoma(), "senteMochiKoma"));
         }
     }
 
@@ -139,14 +140,14 @@ function clickGoteKomadai() {
             // 盤から駒台に駒を追加
             const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
             if (preClickKoma) {
-                goteMochiKomaList.add(new board.MochiKoma(preClickKoma, 1, "gote"));
+                goteMochiKomaList.add(new board.BanKoma(preClickKoma, "goteMochiKoma"));
             }
         } else if (senteMochiKomaList.wasClicked()) {
             // 先手の駒台から後手の駒台へ駒を移動
-            goteMochiKomaList.add(new board.MochiKoma(senteMochiKomaList.pickPreClickKoma(), 1, "gote"));
+            goteMochiKomaList.add(new board.BanKoma(senteMochiKomaList.pickPreClickKoma(), "goteMochiKoma"));
         } else if (gomibakoKomaList.wasClicked()) {
             // 使わない駒置き場から後手の駒台へ駒を移動
-            goteMochiKomaList.add(new board.MochiKoma(gomibakoKomaList.pickPreClickKoma(), 1, "gote"));
+            goteMochiKomaList.add(new board.BanKoma(gomibakoKomaList.pickPreClickKoma(), "goteMochiKoma"));
         }
     }
 
@@ -171,14 +172,14 @@ function clickGomibako() {
         // 駒台に駒を追加
         const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
         if (preClickKoma) {
-            gomibakoKomaList.add(new board.MochiKoma(preClickKoma, 1, "gomibako"));
+            gomibakoKomaList.add(new board.BanKoma(preClickKoma, "gomibako"));
         }
     } else if (senteMochiKomaList.wasClicked()) {
         // 先手の持駒から使わない駒置き場へ移動
-        gomibakoKomaList.add(new board.MochiKoma(senteMochiKomaList.pickPreClickKoma(), 1, "gomibako"));
+        gomibakoKomaList.add(new board.BanKoma(senteMochiKomaList.pickPreClickKoma(), "gomibako"));
     } else if (goteMochiKomaList.wasClicked()) {
         // 後手の持駒から使わない駒置き場へ移動
-        gomibakoKomaList.add(new board.MochiKoma(goteMochiKomaList.pickPreClickKoma(), 1, "gomibako"));
+        gomibakoKomaList.add(new board.BanKoma(goteMochiKomaList.pickPreClickKoma(), "gomibako"));
     }
 
     resetClickAll();
@@ -199,15 +200,27 @@ function clickMasu(event: Event, masu: board.Masu) {
             const moveBanKoma = banKomaList.getBanKoma(preClickMasu); // 移動する駒
 
             // 駒を移動 (取った駒が返される)
-            const torareKoma = banKomaList.moveTo(preClickMasu, masu);
+            const torareBanKoma = banKomaList.moveTo(preClickMasu, masu);
 
-            if (moveBanKoma && torareKoma) {
+            if (moveBanKoma && torareBanKoma) {
                 if (moveBanKoma.isSente()) { // 先手が駒を取った場合
                     // 先手の駒台に駒を追加
-                    senteMochiKomaList.add(new board.MochiKoma(torareKoma, 1, "sente"));
+                    const mochiKoma = new board.BanKoma(torareBanKoma.getKoma(), "senteMochiKoma");
+                    senteMochiKomaList.add(mochiKoma);
+                    const newMove: board.Move = {
+                        before: torareBanKoma, 
+                        after: mochiKoma, 
+                    };
+                    moveList.add(newMove);
                 } else { // 後手が駒を取った場合
                     // 後手の駒台に駒を追加
-                    goteMochiKomaList.add(new board.MochiKoma(torareKoma, 1, "gote"));
+                    const mochiKoma = new board.BanKoma(torareBanKoma.getKoma(), "goteMochiKoma");
+                    goteMochiKomaList.add(mochiKoma);
+                    const newMove: board.Move = {
+                        before: torareBanKoma, 
+                        after: mochiKoma, 
+                    };
+                    moveList.add(newMove);
                 }
             }
 
@@ -281,6 +294,10 @@ function clickSetUra() {
         banKomaList.remove(masu);
         banKomaList.add(komaUra, masu);
     }
+
+    // if (!editFlag.value) {
+    //     moveList.lastToUra();
+    // }
 
     rightClickMenu.hideMenu();
 }
