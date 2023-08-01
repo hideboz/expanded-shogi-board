@@ -318,6 +318,10 @@ class BanKoma {
 
     hasUra() { return this.koma.hasUra(); }
     toUra() { this.koma.toUra(); }
+    toNari() { this.koma.toNari(); }
+
+    // 先後逆にする
+    toSengoGyaku() { this.koma.toSengoGyaku(); }
 
     isFunari() { return this.koma.isFunari(); }
 
@@ -348,14 +352,16 @@ class BanKomaList {
         this.preClickHTMLElem = null;  // ひとつ前にクリックされた HTML element
     }
 
-    add(koma: Koma, masu: Masu) {
-        if (this.hasKomaAt(masu)) {
+    // 駒を追加
+    add(banKoma: BanKoma) {
+        if (this.hasKomaAt(banKoma.getMasu())) {
             // console.log("すでに駒がある場所には持駒を打てません。"); // debug
         } else {
-            this.getList().push(new BanKoma(koma, "ban", masu));
+            this.getList().push(banKoma);
         }
     }
 
+    // masu にある駒を削除
     remove(masu: Masu) {
         const idx = this.getIndexAt(masu);
         if (idx != -1) {
@@ -398,6 +404,22 @@ class BanKomaList {
             return this.getList()[idx].getCopy();
         }
         return null;
+    }
+
+    // masu にある駒を先後逆にする
+    toSengoGyaku(masu: Masu) { 
+        const idx = this.getIndexAt(masu);
+        if (idx != -1) {
+            this.getList()[idx].toSengoGyaku();
+        }
+    }
+
+    // masu にある駒を裏返しにする
+    toUra(masu: Masu) { 
+        const idx = this.getIndexAt(masu);
+        if (idx != -1) {
+            this.getList()[idx].toUra();
+        }
     }
 
     // 指定したマスにある駒の index を返す (なければ -1 を返す)
@@ -454,53 +476,57 @@ class BanKomaList {
 
     // 平手の配置になるように駒を追加する
     setHirate() {
-        this.add(new Koma("歩", true, false), new Masu(1, 7));
-        this.add(new Koma("歩", true, false), new Masu(2, 7));
-        this.add(new Koma("歩", true, false), new Masu(3, 7));
-        this.add(new Koma("歩", true, false), new Masu(4, 7));
-        this.add(new Koma("歩", true, false), new Masu(5, 7));
-        this.add(new Koma("歩", true, false), new Masu(6, 7));
-        this.add(new Koma("歩", true, false), new Masu(7, 7));
-        this.add(new Koma("歩", true, false), new Masu(8, 7));
-        this.add(new Koma("歩", true, false), new Masu(9, 7));
-        this.add(new Koma("飛", true, false), new Masu(2, 8));
-        this.add(new Koma("角", true, false), new Masu(8, 8));
-        this.add(new Koma("香", true, false), new Masu(1, 9));
-        this.add(new Koma("桂", true, false), new Masu(2, 9));
-        this.add(new Koma("銀", true, false), new Masu(3, 9));
-        this.add(new Koma("金", true, false), new Masu(4, 9));
-        this.add(new Koma("玉", true, false), new Masu(5, 9));
-        this.add(new Koma("金", true, false), new Masu(6, 9));
-        this.add(new Koma("銀", true, false), new Masu(7, 9));
-        this.add(new Koma("桂", true, false), new Masu(8, 9));
-        this.add(new Koma("香", true, false), new Masu(9, 9));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(1, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(2, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(3, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(4, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(5, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(6, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(7, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(8, 7)));
+        this.add(new BanKoma(new Koma("歩", true, false), "ban", new Masu(9, 7)));
 
-        this.add(new Koma("香", false, false), new Masu(1, 1));
-        this.add(new Koma("桂", false, false), new Masu(2, 1));
-        this.add(new Koma("銀", false, false), new Masu(3, 1));
-        this.add(new Koma("金", false, false), new Masu(4, 1));
-        this.add(new Koma("玉", false, false), new Masu(5, 1));
-        this.add(new Koma("金", false, false), new Masu(6, 1));
-        this.add(new Koma("銀", false, false), new Masu(7, 1));
-        this.add(new Koma("桂", false, false), new Masu(8, 1));
-        this.add(new Koma("香", false, false), new Masu(9, 1));
-        this.add(new Koma("角", false, false), new Masu(2, 2));
-        this.add(new Koma("飛", false, false), new Masu(8, 2));
-        this.add(new Koma("歩", false, false), new Masu(1, 3));
-        this.add(new Koma("歩", false, false), new Masu(2, 3));
-        this.add(new Koma("歩", false, false), new Masu(3, 3));
-        this.add(new Koma("歩", false, false), new Masu(4, 3));
-        this.add(new Koma("歩", false, false), new Masu(5, 3));
-        this.add(new Koma("歩", false, false), new Masu(6, 3));
-        this.add(new Koma("歩", false, false), new Masu(7, 3));
-        this.add(new Koma("歩", false, false), new Masu(8, 3));
-        this.add(new Koma("歩", false, false), new Masu(9, 3));
+        this.add(new BanKoma(new Koma("飛", true, false), "ban", new Masu(2, 8)));
+        this.add(new BanKoma(new Koma("角", true, false), "ban", new Masu(8, 8)));
+
+        this.add(new BanKoma(new Koma("香", true, false), "ban", new Masu(1, 9)));
+        this.add(new BanKoma(new Koma("桂", true, false), "ban", new Masu(2, 9)));
+        this.add(new BanKoma(new Koma("銀", true, false), "ban", new Masu(3, 9)));
+        this.add(new BanKoma(new Koma("金", true, false), "ban", new Masu(4, 9)));
+        this.add(new BanKoma(new Koma("玉", true, false), "ban", new Masu(5, 9)));
+        this.add(new BanKoma(new Koma("金", true, false), "ban", new Masu(6, 9)));
+        this.add(new BanKoma(new Koma("銀", true, false), "ban", new Masu(7, 9)));
+        this.add(new BanKoma(new Koma("桂", true, false), "ban", new Masu(8, 9)));
+        this.add(new BanKoma(new Koma("香", true, false), "ban", new Masu(9, 9)));
+
+        this.add(new BanKoma(new Koma("香", false, false), "ban", new Masu(1, 1)));
+        this.add(new BanKoma(new Koma("桂", false, false), "ban", new Masu(2, 1)));
+        this.add(new BanKoma(new Koma("銀", false, false), "ban", new Masu(3, 1)));
+        this.add(new BanKoma(new Koma("金", false, false), "ban", new Masu(4, 1)));
+        this.add(new BanKoma(new Koma("玉", false, false), "ban", new Masu(5, 1)));
+        this.add(new BanKoma(new Koma("金", false, false), "ban", new Masu(6, 1)));
+        this.add(new BanKoma(new Koma("銀", false, false), "ban", new Masu(7, 1)));
+        this.add(new BanKoma(new Koma("桂", false, false), "ban", new Masu(8, 1)));
+        this.add(new BanKoma(new Koma("香", false, false), "ban", new Masu(9, 1)));
+
+        this.add(new BanKoma(new Koma("角", false, false), "ban", new Masu(2, 2)));
+        this.add(new BanKoma(new Koma("飛", false, false), "ban", new Masu(8, 2)));
+
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(1, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(2, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(3, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(4, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(5, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(6, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(7, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(8, 3)));
+        this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(9, 3)));
     }
 }
 
 // すべての持駒を含むクラス (先手、後手別)
 class MochiKomaList {
-    reflist: Ref<BanKoma[]> = ref([]); // MochiKomaクラスのオブジェクトのリスト
+    reflist: Ref<BanKoma[]> = ref([]); // BanKomaクラスのオブジェクトのリスト
     preClickIndex: number = -1; // ひとつ前にクリックされた持駒の index
     preClickHTMLElem: HTMLElement | null = null; // ひとつ前にクリックされた HTML element
 
@@ -528,7 +554,8 @@ class MochiKomaList {
 
     // 盤上に打つときに使うメンバ関数
     // 駒の向きは MochiKoma.getKoma() が処理してくれる
-    getKoma(idx: number) { return this.getList()[idx].getKoma(); }
+    //  getKoma(idx: number) { return this.getList()[idx].getKoma(); }
+    getBanKoma(idx: number) { return this.getList()[idx].getCopy(); }
 
     getList() { return this.reflist.value; }
 
@@ -558,10 +585,10 @@ class MochiKomaList {
     wasClicked() { return (this.preClickIndex != -1); }
 
     // ひとつ前にクリックされた持駒を打つ (komaを削除して、返す)
-    pickPreClickKoma() {
-        const koma = this.getKoma(this.preClickIndex)
+    pickPreClickBanKoma() {
+        const banKoma = this.getBanKoma(this.preClickIndex);
         this.remove(this.preClickIndex);
-        return koma;
+        return banKoma;
     }
 
     // 他にどこもクリックされていない状態で、新たにクリックされた場合の処理
@@ -571,9 +598,22 @@ class MochiKomaList {
     }
 }
 
-interface Move {
-    before: BanKoma | null;
-    after: BanKoma | null;
+// 駒の動きを表わすクラス
+class Move {
+    before: BanKoma;
+    after: BanKoma;
+
+    constructor(before: BanKoma, after: BanKoma) {
+        this.before = before;
+        this.after = after;
+    }
+
+    getBefore() { return this.before.getCopy(); }
+    getAfter() { return this.after.getCopy(); }
+
+    afterToNari() { this.after.toNari(); }
+
+    toString() { return `${this.before.toString()} -> ${this.after.toString()}`}
 }
 
 // 履歴を保存するクラス
@@ -592,15 +632,17 @@ class MoveList {
         }
 
         this.moveList[this.lastPosition] = newMove;
+
+        console.log(newMove.toString()); // debug
     }
 
-    // lastToUra() {
-    //     if (this.lastPosition != -1) {
-    //         if (this.moveList[this.lastPosition].after instanceof BanKoma) {
-    //             this.moveList[this.lastPosition].after.toUra();
-    //         }
-    //     }
-    // }
+    // 履歴の最後の Move の after を成りにする
+    lastToNari() {
+        if (this.lastPosition != -1) {
+            this.moveList[this.lastPosition].afterToNari();
+            console.log(this.moveList[this.lastPosition].toString()); // debug
+        }
+    }
 
     // lastPosition の次の Move を返す
     getForward() {
@@ -625,4 +667,4 @@ class MoveList {
     }
 }
 
-export { Masu, MasuList, Koma, BanKoma, BanKomaList, MochiKomaList, type Move, MoveList };
+export { Masu, MasuList, Koma, BanKoma, BanKomaList, MochiKomaList, Move, MoveList };
