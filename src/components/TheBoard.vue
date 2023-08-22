@@ -18,6 +18,7 @@
 -->
 
 <script setup lang="ts">
+import { monitorEventLoopDelay } from 'perf_hooks';
 import * as board from './boardCommon'
 import KomaSymbols from './KomaSymbols.vue'
 import { ref, onMounted, onBeforeMount } from 'vue'
@@ -51,7 +52,7 @@ class RightClickMenu {
         // 操作モードでは、そのままの駒を表示する
         if (editFlag.value) {
             this.komaSengoGyaku.toSengoGyaku();
-        }   
+        }
 
         this.komaSengoGyakuId.value = this.komaSengoGyaku.getSymbolid();
 
@@ -69,6 +70,7 @@ class RightClickMenu {
                 this.komaUra.setName("王");
             }
 
+            console.log("this.komaUra: ", this.komaUra); // debug
             this.komaUraId.value = this.komaUra.getSymbolid();
         }
 
@@ -98,42 +100,18 @@ class RightClickMenu {
 // 各クラスのインスタンス
 const masuList = new board.MasuList();
 const banKomaList = new board.BanKomaList();
-const senteMochiKomaList = new board.MochiKomaList();
-const goteMochiKomaList = new board.MochiKomaList();
-const gomibakoKomaList = new board.MochiKomaList();
 const rightClickMenu = new RightClickMenu();
 const moveList = new board.MoveList();
 
 // 前のクリックをリセットする
 function resetClickAll() {
     banKomaList.resetClick();
-    senteMochiKomaList.resetClick();
-    goteMochiKomaList.resetClick();
-    gomibakoKomaList.resetClick();
 }
 
 // 先手の駒台がクリックされたときの処理
 function clickSenteKomadai() {
-    if (editFlag.value) {
-        if (banKomaList.wasClicked()) {
-            // 盤から駒台に駒を追加
-            const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
-            if (preClickKoma) {
-                senteMochiKomaList.add(new board.BanKoma(preClickKoma, "senteMochiKoma"));
-            }
-        } else if (goteMochiKomaList.wasClicked()) {
-            // 後手の駒台から先手の駒台へ駒を移動
-            const beforeBanKoma = goteMochiKomaList.pickPreClickBanKoma();
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "senteMochiKoma");
-            banKomaList.add(afterBanKoma);
-            moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-        } else if (gomibakoKomaList.wasClicked()) {
-            // 使わない駒置き場から先手の駒台へ駒を移動
-            const beforeBanKoma = gomibakoKomaList.pickPreClickBanKoma();
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "senteMochiKoma");
-            banKomaList.add(afterBanKoma);
-            moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-        }
+    if (editFlag.value && banKomaList.wasClicked()) {
+        banKomaList.movePreClickBanKoma("senteMochiKoma");
     }
 
     resetClickAll();
@@ -141,27 +119,8 @@ function clickSenteKomadai() {
 
 // 後手の駒台がクリックされたときの処理
 function clickGoteKomadai() {
-    if (editFlag.value) {
-        if (banKomaList.wasClicked()) {
-            // 盤から駒台に駒を追加
-            const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
-            if (preClickKoma) {
-                goteMochiKomaList.add(new board.BanKoma(preClickKoma, "goteMochiKoma"));
-            }
-        } else if (senteMochiKomaList.wasClicked()) {
-            // 先手の駒台から後手の駒台へ駒を移動
-            const beforeBanKoma = senteMochiKomaList.pickPreClickBanKoma();
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "goteMochiKoma");
-            banKomaList.add(afterBanKoma);
-            moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-
-        } else if (gomibakoKomaList.wasClicked()) {
-            // 使わない駒置き場から後手の駒台へ駒を移動
-            const beforeBanKoma = gomibakoKomaList.pickPreClickBanKoma();
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "goteMochiKoma");
-            banKomaList.add(afterBanKoma);
-            moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-        }
+    if (editFlag.value && banKomaList.wasClicked()) {
+        banKomaList.movePreClickBanKoma("goteMochiKoma");
     }
 
     resetClickAll();
@@ -170,36 +129,25 @@ function clickGoteKomadai() {
 // 先手の駒台の持駒がクリックされたときの処理
 function clickSenteMochiKoma(event: Event, index: number) {
     resetClickAll();
-    senteMochiKomaList.newClick(event, index);
+    banKomaList.newClickAtSenteIdx(event, index);
 }
 
 // 後手の駒台の持駒がクリックされたときの処理
 function clickGoteMochiKoma(event: Event, index: number) {
     resetClickAll();
-    goteMochiKomaList.newClick(event, index);
+    banKomaList.newClickAtGoteIdx(event, index);
 }
 
 // 使わない駒置き場がクリックされたときの処理
+// 操作モードでの履歴には追加しない
 function clickGomibako() {
-    if (banKomaList.wasClicked()) {
+    if (!banKomaList.wasClickedAt("gomibako")) {
         // 駒台に駒を追加
-        const preClickKoma = banKomaList.pickPreClickKoma()?.getKoma();
-        if (preClickKoma) {
-            gomibakoKomaList.add(new board.BanKoma(preClickKoma, "gomibako"));
+        const beforeBanKoma = banKomaList.pickPreClickBanKoma();
+        if (beforeBanKoma) {
+            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "gomibako");
+            banKomaList.add(afterBanKoma);
         }
-    } else if (senteMochiKomaList.wasClicked()) {
-        // 先手の持駒から使わない駒置き場へ移動
-        const beforeBanKoma = senteMochiKomaList.pickPreClickBanKoma();
-        const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "gomibako");
-        banKomaList.add(afterBanKoma);
-        moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-
-    } else if (goteMochiKomaList.wasClicked()) {
-        // 後手の持駒から使わない駒置き場へ移動
-        const beforeBanKoma = goteMochiKomaList.pickPreClickBanKoma();
-        const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "gomibako");
-        banKomaList.add(afterBanKoma);
-        moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
     }
 
     resetClickAll();
@@ -208,80 +156,45 @@ function clickGomibako() {
 // 使わない駒置き場の駒がクリックされたときの処理
 function clickGomibakoKoma(event: Event, index: number) {
     resetClickAll();
-    gomibakoKomaList.newClick(event, index);
+    banKomaList.newClickAtGomibakoIdx(event, index);
 }
 
 // マスがクリックされたときの処理
 function clickMasu(event: Event, masu: board.Masu) {
     // ひとつ前にマスがクリックされていた場合
-    if (banKomaList.wasClicked()) {
-        const preClickMasu = banKomaList.getPreClickMasu();
-        if (preClickMasu && (!masu.equal(preClickMasu))) { // 違うマスがクリックされた場合
-            const moveBanKoma = banKomaList.getBanKoma(preClickMasu); // 移動する駒
+    if (banKomaList.wasClickedAt("ban")) {
+        // 駒を移動 (駒を取った場合は、Move に含めて返される)
+        const move = banKomaList.moveOnBan(masu);
 
-            // 駒を移動 (取った駒が返される)
-            const torareBanKoma = banKomaList.moveTo(preClickMasu, masu);
+        // 操作モードの場合
+        if (!editFlag.value) {
+            if (move) {
+                moveList.add(move);
 
-            if (moveBanKoma) {
-                // 駒を取った場合
-                if (torareBanKoma) {
-                    if (moveBanKoma.isSente()) { // 先手が駒を取った場合
-                        // 先手の駒台に駒を追加
-                        const mochiKoma = new board.BanKoma(torareBanKoma.getKoma(), "senteMochiKoma");
-                        senteMochiKomaList.add(mochiKoma);
-                        moveList.add(new board.Move(torareBanKoma, mochiKoma));
-                    } else { // 後手が駒を取った場合
-                        // 後手の駒台に駒を追加
-                        const mochiKoma = new board.BanKoma(torareBanKoma.getKoma(), "goteMochiKoma");
-                        goteMochiKomaList.add(mochiKoma);
-                        moveList.add(new board.Move(torareBanKoma, mochiKoma));
-                    }
-                } else {
-                    const afterMoveBanKoma = banKomaList.getBanKoma(masu); // 移動した後の駒
-                    if (afterMoveBanKoma) {
-                        moveList.add(new board.Move(moveBanKoma, afterMoveBanKoma));
-                    }
-                }
-            }
-
-            // 操作モードの場合 (moveBanKoma は動いた後のマスにいることに注意)
-            if (! editFlag.value) {
-                if (moveBanKoma?.canNari(preClickMasu)) {
-                    if (event.target) {
-                        rightClickMenu.set(event.target as HTMLElement, masu, moveBanKoma.getKoma());
-                    }
+                // 成るか不成か確認する画面を表示
+                if (move.canNari() && event.target) {
+                    rightClickMenu.set(event.target as HTMLElement, masu, move.getAfterKoma());
                 }
             }
         }
 
         banKomaList.resetClick();
+    }
+    // 持駒(先手、後手、使わない駒置き場)がクリックされていた場合
+    else if (banKomaList.wasClicked()) {
+        // 駒を移動
+        const move = banKomaList.moveToBan(masu);
+        if (!editFlag.value) {
+            if (move) {
+                moveList.add(move);
+            }
+        }
 
-    } else if (senteMochiKomaList.wasClicked()) { // 先手の持駒がクリックされていた場合
-        if (!banKomaList.hasKomaAt(masu)) {
-            const beforeBanKoma = senteMochiKomaList.pickPreClickBanKoma();
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "ban", masu)
-            banKomaList.add(afterBanKoma);
-            moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-        }
-        senteMochiKomaList.resetClick();
-    } else if (goteMochiKomaList.wasClicked()) { // 後手の持駒がクリックされていた場合
-        if (!banKomaList.hasKomaAt(masu)) {
-            const beforeBanKoma = goteMochiKomaList.pickPreClickBanKoma();
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "ban", masu)
-            banKomaList.add(afterBanKoma);
-            moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-        }
-        goteMochiKomaList.resetClick();
-    } else if (gomibakoKomaList.wasClicked()) { // 使わない駒置き場の駒がクリックされていた場合
-        if (!banKomaList.hasKomaAt(masu)) {
-            const beforeBanKoma = gomibakoKomaList.pickPreClickBanKoma();
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "ban", masu)
-            banKomaList.add(afterBanKoma);
-            moveList.add(new board.Move(beforeBanKoma, afterBanKoma));
-        }
-        gomibakoKomaList.resetClick();
-    } else {
-        banKomaList.newClick(event, masu);
+        banKomaList.resetClick();
+    }
+    // まだどこもクリックされていなかった場合
+    else {
+        banKomaList.newClickAtMasu(event, masu);
     }
 }
 
@@ -292,7 +205,7 @@ function rightClickMasu(event: Event, masu: board.Masu) {
     // 編集モードでのみ有効 
     if (editFlag.value) {
         // クリックされたマス目に駒があればメニューを表示する
-        const koma = banKomaList.getBanKoma(masu)?.getKoma();
+        const koma = banKomaList.getAtMasu(masu)?.getKoma();
         if (koma) {
             if (event.target) {
                 rightClickMenu.set(event.target as HTMLElement, masu, koma);
@@ -305,7 +218,8 @@ function rightClickMasu(event: Event, masu: board.Masu) {
 function clickSetSengoGyaku() {
     const masu = rightClickMenu.getMasu();
 
-    if (masu) {
+    // 操作モードでは何もしない
+    if (masu && editFlag.value) {
         banKomaList.toSengoGyaku(masu);
     }
 
@@ -318,17 +232,17 @@ function clickSetUra() {
 
     if (masu) {
         banKomaList.toUra(masu);
-    }
 
-    if (!editFlag.value) {
-        moveList.lastToNari();
+        if (!editFlag.value) {
+            moveList.lastToNari();
+        }
     }
 
     rightClickMenu.hideMenu();
 }
 
 const viewBoxHeightEdit = 1110; // SVGの viewBox の高さ (編集モード)
-const viewBoxHeightPlay = 980; // SVGの viewBox の高さ (操作モード)
+const viewBoxHeightPlay = 1060; // SVGの viewBox の高さ (操作モード)
 const viewBoxHeight = ref(viewBoxHeightEdit); // SVGの viewBox の高さ
 const viewBoxWidth = 1190; // SVGの viewBox の幅 (幅は変化しない)
 const boardWidth = ref("100%");  // 将棋盤の幅
@@ -389,7 +303,7 @@ onMounted(() => {
                         </g>
                     </defs>
 
-                    <rect x="0" y="0" width="1190" height="980" style="fill: #8b968d;" />
+                    <rect x="0" y="0" :width="viewBoxWidth" :height="viewBoxHeight" style="fill: #8b968d;" />
 
                     <!-- 先手の持駒 -->
                     <g transform="translate(1080, 30)">
@@ -401,20 +315,21 @@ onMounted(() => {
 
                         <g transform="translate(10, 20)">
                             <!-- 持駒 -->
-                            <use width="80" height="80" v-for="(k, idx) in senteMochiKomaList.getList()" :key="k.getKey()"
-                                x="0" :y="idx * 80 + 30" :href="k.getSymbolid()" />
+                            <use width="80" height="80" v-for="(k, idx) in banKomaList.getSenteMochiKomaList()"
+                                :key="k.getKey()" x="0" :y="idx * 80 + 30" :href="k.getSymbolid()" />
 
                             <!-- 各持駒の個数 -->
                             <g id="nMochiKomaSente"
                                 style="text-anchor: start; font-size: 30px; font-weight: bold; stroke: white; fill: red;">
-                                <text v-for="(k, idx) in senteMochiKomaList.getList()" :key="k.getKey()" x="60"
+                                <text v-for="(k, idx) in banKomaList.getSenteMochiKomaList()" :key="k.getKey()" x="60"
                                     :y="idx * 80 + 100">{{
                                         k.getN() > 1 ? k.getN() : '' }}</text>
                             </g>
 
                             <!-- 持駒の場所のマス -->
-                            <rect v-for="(k, idx) in senteMochiKomaList.getList()" @click="clickSenteMochiKoma($event, idx)"
-                                width="80" height="80" class="square" :key="k.getKey()" x="0" :y="idx * 80 + 30" />
+                            <rect v-for="(k, idx) in banKomaList.getSenteMochiKomaList()"
+                                @click="clickSenteMochiKoma($event, idx)" width="80" height="80" class="square"
+                                :key="k.getKey()" x="0" :y="idx * 80 + 30" />
                         </g>
                     </g>
 
@@ -428,20 +343,21 @@ onMounted(() => {
 
                         <g transform="translate(10, 20)">
                             <!-- 持駒 -->
-                            <use width="80" height="80" v-for="(k, idx) in goteMochiKomaList.getList()" :key="k.getKey()"
-                                x="0" :y="idx * 80 + 30" :href="k.getSymbolid()" />
+                            <use width="80" height="80" v-for="(k, idx) in banKomaList.getGoteMochiKomaList()"
+                                :key="k.getKey()" x="0" :y="idx * 80 + 30" :href="k.getSymbolid()" />
 
                             <!-- 各持駒の個数 -->
                             <g id="nMochiKomaGote"
                                 style="text-anchor: start; font-size: 30px; font-weight: bold; stroke: white; fill: red;">
-                                <text v-for="(k, idx) in goteMochiKomaList.getList()" :key="k.getKey()" x="60"
+                                <text v-for="(k, idx) in banKomaList.getGoteMochiKomaList()" :key="k.getKey()" x="60"
                                     :y="idx * 80 + 100">{{
                                         k.getN() > 1 ? k.getN() : '' }}</text>
                             </g>
 
                             <!-- 持駒の場所のマス -->
-                            <rect v-for="(k, idx) in goteMochiKomaList.getList()" @click="clickGoteMochiKoma($event, idx)"
-                                width="80" height="80" class="square" :key="k.getKey()" x="0" :y="idx * 80 + 30" />
+                            <rect v-for="(k, idx) in banKomaList.getGoteMochiKomaList()"
+                                @click="clickGoteMochiKoma($event, idx)" width="80" height="80" class="square"
+                                :key="k.getKey()" x="0" :y="idx * 80 + 30" />
                         </g>
                     </g>
 
@@ -457,19 +373,20 @@ onMounted(() => {
 
                             <g transform="translate(40, 0)">
                                 <!-- 駒 -->
-                                <use width="80" height="80" v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()"
-                                    :x="idx * 80" y="10" :href="k.getSymbolid()" />
+                                <use width="80" height="80" v-for="(k, idx) in banKomaList.getGomibakoList()"
+                                    :key="k.getKey()" :x="idx * 80" y="10" :href="k.getSymbolid()" />
 
                                 <!-- 各駒の個数 -->
                                 <g
                                     style="text-anchor: middle; font-size: 30px; font-weight: bold; stroke: white; fill: red;">
-                                    <text v-for="(k, idx) in gomibakoKomaList.getList()" :key="k.getKey()"
+                                    <text v-for="(k, idx) in banKomaList.getGomibakoList()" :key="k.getKey()"
                                         :x="idx * 80 + 40" y="100">{{ k.getN() > 1 ? k.getN() : '' }}</text>
                                 </g>
 
                                 <!-- 駒の場所のマス -->
-                                <rect v-for="(k, idx) in gomibakoKomaList.getList()" @click="clickGomibakoKoma($event, idx)"
-                                    width="80" height="80" class="square" :key="k.getKey()" :x="idx * 80" y="10" />
+                                <rect v-for="(k, idx) in banKomaList.getGomibakoList()"
+                                    @click="clickGomibakoKoma($event, idx)" width="80" height="80" class="square"
+                                    :key="k.getKey()" :x="idx * 80" y="10" />
                             </g>
                         </g>
                     </g>
@@ -510,7 +427,7 @@ onMounted(() => {
                         <g transform="translate(10, 10)">
                             <g>
                                 <!-- マス目よりも駒を先に追加して、マス目が上にくるようにする -->
-                                <use width="100" height="100" v-for="bk in banKomaList.getList()"
+                                <use width="100" height="100" v-for="bk in banKomaList.getBanList()"
                                     :x="(9 - bk.getSuji()) * 100" :y="(bk.getDan() - 1) * 100" :href="bk.getSymbolid()"
                                     :key="bk.getKey()" />
                             </g>
