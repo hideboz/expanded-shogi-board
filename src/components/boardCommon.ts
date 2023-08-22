@@ -16,7 +16,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Expanded-Shogi-Board.  If not, see <https://www.gnu.org/licenses/>.
 
-// import { before } from 'node:test';
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 

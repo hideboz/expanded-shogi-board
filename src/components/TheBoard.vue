@@ -18,7 +18,6 @@
 -->
 
 <script setup lang="ts">
-import { monitorEventLoopDelay } from 'perf_hooks';
 import * as board from './boardCommon'
 import KomaSymbols from './KomaSymbols.vue'
 import { ref, onMounted, onBeforeMount } from 'vue'
