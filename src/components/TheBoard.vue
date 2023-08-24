@@ -240,6 +240,21 @@ function clickSetUra() {
     rightClickMenu.hideMenu();
 }
 
+// 履歴を進める
+function forwardHistory() {
+    console.log("Forward."); // debug
+}
+
+// 履歴を戻す
+function backwardHistory() {
+    console.log("Backward."); // debug
+}
+
+// 将棋盤全体を先後逆にする関数
+function sengoGyakuAll() {
+    console.log("SengoGyakuAll."); // debug
+}
+
 const viewBoxHeightEdit = 1110; // SVGの viewBox の高さ (編集モード)
 const viewBoxHeightPlay = 1060; // SVGの viewBox の高さ (操作モード)
 const viewBoxHeight = ref(viewBoxHeightEdit); // SVGの viewBox の高さ
@@ -485,8 +500,13 @@ onMounted(() => {
                         autocomplete="off">
                     <label class="btn btn-outline-primary" for="btnradio2">操作モード</label>
                 </div>
-            </div>
 
+                <div v-if="! editFlag" class="mb-2">
+                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="backwardHistory">&DoubleLeftArrow;</button>
+                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="forwardHistory">&DoubleRightArrow;</button>
+                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="sengoGyakuAll">&circlearrowleft;</button>
+                </div>
+            </div>
         </div>
     </div>
 </template>
