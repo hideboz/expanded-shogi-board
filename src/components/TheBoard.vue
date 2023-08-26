@@ -69,7 +69,6 @@ class RightClickMenu {
                 this.komaUra.setName("王");
             }
 
-            console.log("this.komaUra: ", this.komaUra); // debug
             this.komaUraId.value = this.komaUra.getSymbolid();
         }
 
@@ -242,12 +241,18 @@ function clickSetUra() {
 
 // 履歴を進める
 function forwardHistory() {
-    console.log("Forward."); // debug
+    const forwardMove = moveList.getForward();
+    if (forwardMove) {
+        banKomaList.moveForward(forwardMove);
+    }
 }
 
 // 履歴を戻す
 function backwardHistory() {
-    console.log("Backward."); // debug
+    const backwardMove = moveList.getBackward();
+    if (backwardMove) {
+        banKomaList.moveBackward(backwardMove);
+    }
 }
 
 // 将棋盤全体を先後逆にする関数
@@ -491,7 +496,7 @@ onMounted(() => {
 
             <div class="col">
                 <!-- 操作パネル -->
-                <div class="btn-group my-3" role="group" aria-label="Basic radio toggle button group">
+                <div class="btn-group my-2 mx-1" role="group" aria-label="Basic radio toggle button group">
                     <input @click="changeToEditMode" type="radio" class="btn-check" name="btnradio" id="btnradio1"
                         autocomplete="off" checked>
                     <label class="btn btn-outline-primary" for="btnradio1">編集モード</label>
@@ -501,10 +506,16 @@ onMounted(() => {
                     <label class="btn btn-outline-primary" for="btnradio2">操作モード</label>
                 </div>
 
-                <div v-if="! editFlag" class="mb-2">
-                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="backwardHistory">&DoubleLeftArrow;</button>
-                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="forwardHistory">&DoubleRightArrow;</button>
-                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="sengoGyakuAll">&circlearrowleft;</button>
+                <div class="form-check form-switch fs-4 mx-2 my-2">
+                    <input class="form-check-input" type="checkbox" role="switch" id="sengoGyakuCheck">
+                    <label class="form-check-label text-primary" for="sengoGyakuCheck">先後逆 &circlearrowleft;</label>
+                </div>
+
+                <div  v-if="!editFlag" class="mb-2">
+                    <button type="button" class="btn btn-primary btn-lg mx-1"
+                        @click="backwardHistory">&DoubleLeftArrow; 戻る</button>
+                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="forwardHistory">進む
+                        &DoubleRightArrow;</button>
                 </div>
             </div>
         </div>

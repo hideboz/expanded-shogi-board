@@ -295,6 +295,7 @@ class BanKoma {
     // オブジェクトのコピーを返す
     getCopy() { return new BanKoma(this.koma.getCopy(), this.place, this.masu.getCopy(), this.n); }
 
+    getPlace() { return this.place; }
     at(place: Place) { return this.place === place; }
 
     // BanKoma が指定のマスにあるかどうか
@@ -391,6 +392,34 @@ class BanKomaList {
                 list.sort((k1, k2) => (k2.getKoma().getPriority() - k1.getKoma().getPriority()));
             } else {
                 list[idx].nInc();
+            }
+        }
+    }
+
+    // 駒を削除
+    remove(banKoma: BanKoma) {
+        if (banKoma.at("ban")) {
+            if (this.hasKomaAtMasu(banKoma.getMasu())) {
+                this.removeAtMasu(banKoma.getMasu());
+            } else {
+                // console.log("該当する駒はありません。"); // debug
+            }
+        } else {
+            let list: BanKoma[] = [];
+            if (banKoma.at("senteMochiKoma")) {
+                list = this.getSenteMochiKomaList();
+            } else if (banKoma.at("goteMochiKoma")) {
+                list = this.getGoteMochiKomaList();
+            } else if (banKoma.at("gomibako")) {
+                list = this.getGomibakoList();
+            }
+
+            const idx = list.findIndex((k) => banKoma.getName() === k.getName());
+
+            if (idx === -1) {
+                // console.log("該当する駒はありません。"); // debug
+            } else {
+                this.removeAtIdx(banKoma.getPlace(), idx);
             }
         }
     }
@@ -669,6 +698,36 @@ class BanKomaList {
         this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(8, 3)));
         this.add(new BanKoma(new Koma("歩", false, false), "ban", new Masu(9, 3)));
     }
+
+    // move の動きを進める
+    moveForward(move: Move) {
+        const torareBefore = move.getTorareBefore();
+        if (torareBefore) {
+            this.remove(torareBefore);
+        }
+        const torareAfter = move.getTorareAfter();
+        if (torareAfter) {
+            this.add(torareAfter);
+        }
+
+        this.remove(move.getBefore());
+        this.add(move.getAfter());
+    }
+
+    // move の動きを戻す
+    moveBackward(move: Move) {
+        this.remove(move.getAfter());
+        this.add(move.getBefore());
+
+        const torareAfter = move.getTorareAfter();
+        if (torareAfter) {
+            this.remove(torareAfter);
+        }
+        const torareBefore = move.getTorareBefore();
+        if (torareBefore) {
+            this.add(torareBefore);
+        }
+    }
 }
 
 // 駒の動きを表わすクラス
@@ -679,14 +738,32 @@ class Move {
     torareAfter: BanKoma | null;
 
     constructor(before: BanKoma, after: BanKoma, torareBefore: BanKoma | null = null, torareAfter: BanKoma | null = null) {
-        this.before = before;
-        this.after = after;
-        this.torareBefore = torareBefore;
-        this.torareAfter = torareAfter;
+        this.before = before.getCopy();
+        this.after = after.getCopy();
+        this.torareBefore = null;
+        if (torareBefore) {
+            this.torareBefore = torareBefore.getCopy();
+        }
+        this.torareAfter = null;
+        if (torareAfter) {
+            this.torareAfter = torareAfter.getCopy();
+        }
     }
 
     getBefore() { return this.before.getCopy(); }
     getAfter() { return this.after.getCopy(); }
+    getTorareBefore() { 
+        if (this.torareBefore) {
+            return this.torareBefore.getCopy(); 
+        }
+        return null;
+    }
+    getTorareAfter() { 
+        if (this.torareAfter) {
+            return this.torareAfter.getCopy(); 
+        }
+        return null;
+    }
 
     afterToNari() { this.after.toNari(); }
 
@@ -704,7 +781,13 @@ class Move {
 
     getAfterKoma() { return this.after.getKoma(); }
 
-    toString() { return `${this.before.toString()} -> ${this.after.toString()}` }
+    toString() { 
+        let s = `${this.before.toString()} -> ${this.after.toString()}`;
+        if (this.torareBefore && this.torareAfter) {
+            s += ` (${this.torareBefore.toString()} -> ${this.torareAfter.toString()})`;
+        }
+        return s;
+    }
 }
 
 // 履歴を保存するクラス
@@ -724,7 +807,7 @@ class MoveList {
 
         this.moveList[this.lastPosition] = newMove;
 
-        console.log(newMove.toString()); // debug
+        // console.log(newMove.toString()); // debug
     }
 
     // 履歴の最後の Move の after を成りにする
@@ -735,20 +818,29 @@ class MoveList {
         }
     }
 
+    // lastPosition より次に進めるかどうかを示す
+    hasForward() {
+        return (this.lastPosition <= (this.moveList.length - 1));
+    }
+
     // lastPosition の次の Move を返す
     getForward() {
-        const newPosition = this.lastPosition + 1;
-        if (newPosition < (this.moveList.length - 1)) {
-            this.lastPosition = newPosition;
-            return this.moveList[newPosition];
+        if (this.hasForward()) {
+            this.lastPosition += 1;
+            return this.moveList[this.lastPosition];
         }
 
         return null;
     }
 
+    // lastPosition より前(0の方向)に進めるかどうかを示す
+    hasBackward() {
+        return (this.lastPosition > -1);
+    }
+
     // lastPosition の Move を返して、lastPosition を decriment
     getBackward() {
-        if (this.lastPosition != -1) {
+        if (this.lastPosition > -1) {
             const position = this.lastPosition;
             this.lastPosition -= 1;
             return this.moveList[position];
