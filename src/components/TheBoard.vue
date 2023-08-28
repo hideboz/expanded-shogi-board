@@ -506,9 +506,9 @@ onMounted(() => {
                 </div>
 
                 <div  v-if="!editFlag" class="mb-2">
-                    <button type="button" class="btn btn-primary btn-lg mx-1"
+                    <button :disabled="! moveList.hasBackward()" type="button" class="btn btn-primary btn-lg mx-1"
                         @click="backwardHistory">&DoubleLeftArrow; 戻る</button>
-                    <button type="button" class="btn btn-primary btn-lg mx-1" @click="forwardHistory">進む
+                    <button :disabled="! moveList.hasForward()" type="button" class="btn btn-primary btn-lg mx-1" @click="forwardHistory">進む
                         &DoubleRightArrow;</button>
                 </div>
             </div>

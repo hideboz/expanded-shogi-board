@@ -795,7 +795,7 @@ class MoveList {
 
     // lastPosition より次に進めるかどうかを示す
     hasForward() {
-        return (this.lastPosition <= (this.moveList.length - 1));
+        return (this.lastPosition < (this.moveList.length - 1));
     }
 
     // lastPosition の次の Move を返す
