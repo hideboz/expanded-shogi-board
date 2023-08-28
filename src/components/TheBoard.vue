@@ -137,15 +137,9 @@ function clickGoteMochiKoma(event: Event, index: number) {
 }
 
 // 使わない駒置き場がクリックされたときの処理
-// 操作モードでの履歴には追加しない
 function clickGomibako() {
-    if (!banKomaList.wasClickedAt("gomibako")) {
-        // 駒台に駒を追加
-        const beforeBanKoma = banKomaList.pickPreClickBanKoma();
-        if (beforeBanKoma) {
-            const afterBanKoma = new board.BanKoma(beforeBanKoma.getKoma(), "gomibako");
-            banKomaList.add(afterBanKoma);
-        }
+    if (editFlag.value && banKomaList.wasClicked()) {
+        banKomaList.movePreClickBanKoma("gomibako");
     }
 
     resetClickAll();

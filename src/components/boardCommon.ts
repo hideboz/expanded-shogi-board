@@ -296,18 +296,24 @@ class BanKoma {
     getCopy() { return new BanKoma(this.koma.getCopy(), this.place, this.masu.getCopy(), this.n); }
 
     getPlace() { return this.place; }
-    at(place: Place) { return this.place === place; }
 
-    // BanKoma が指定のマスにあるかどうか
-    atMasu(masu: Masu) { return (this.at("ban") && this.masu.equal(masu)); }
+    atPlace(place: Place) { return this.place === place; }
+    atMasu(masu: Masu) { return (this.atPlace("ban") && this.masu.equal(masu)); }
 
-    // 駒を新しい場所に動かす
-    // 動かした後コピーを返す
-    moveTo(place: Place, masu: Masu = new Masu(0, 0)) {
-        this.place = place;
-        this.masu = masu;
-
-        return this.getCopy();
+    // 新しい場所に動かした後の BanKoma を返す
+    getMoveTo(newPlace: Place, masu: Masu = new Masu(0, 0)) {
+        let koma = this.koma;
+        if (this.place != newPlace) {
+            // 盤から駒台 (使わない駒置き場含む) へ移動する場合
+            if (this.place == "ban") {
+                koma = this.koma.getBaseKoma();
+            }
+            // 後手の持駒を打つ場合
+            else if (this.place == "goteMochiKoma") {
+                koma.toGote();
+            }
+        }
+        return new BanKoma(koma, newPlace, masu, 1);
     }
 
     // Vue.js のリストレンダリングで使用する key を取得するゲッター
@@ -326,8 +332,6 @@ class BanKoma {
         }
         return koma;
     }
-
-    getBaseKoma() { return this.koma.getBaseKoma(); }
 
     getMasu() { return this.masu.getCopy(); }
     getSuji() { return this.masu.getSuji(); }
@@ -356,16 +360,18 @@ class BanKomaList {
     senteMochiKomaList: Ref<BanKoma[]> = ref([]);
     goteMochiKomaList: Ref<BanKoma[]> = ref([]);
     gomibakoList: Ref<BanKoma[]> = ref([]);
-    preClickPlace: Place | null = null;
+    
+    preClickBanKoma: BanKoma | null = null;
+    // preClickPlace: Place | null = null;
     preClickHTMLElem: HTMLElement | null = null;
-    preClickMasu: Masu | null = null;
-    preClickIdx: number = -1; // ひとつ前にクリックされた持駒の index
+    // preClickMasu: Masu | null = null;
+    // preClickIdx: number = -1; // ひとつ前にクリックされた持駒の index
 
     constructor() { }
 
     // 駒を追加
     add(banKoma: BanKoma) {
-        if (banKoma.at("ban")) {
+        if (banKoma.atPlace("ban")) {
             if (this.hasKomaAtMasu(banKoma.getMasu())) {
                 // console.log("すでに駒がある場所には持駒を打てません。"); // debug
             } else {
@@ -377,11 +383,11 @@ class BanKomaList {
             // banKoma.toFunari();
 
             let list: BanKoma[] = [];
-            if (banKoma.at("senteMochiKoma")) {
+            if (banKoma.atPlace("senteMochiKoma")) {
                 list = this.getSenteMochiKomaList();
-            } else if (banKoma.at("goteMochiKoma")) {
+            } else if (banKoma.atPlace("goteMochiKoma")) {
                 list = this.getGoteMochiKomaList();
-            } else if (banKoma.at("gomibako")) {
+            } else if (banKoma.atPlace("gomibako")) {
                 list = this.getGomibakoList();
             }
 
@@ -398,7 +404,7 @@ class BanKomaList {
 
     // 駒を削除
     remove(banKoma: BanKoma) {
-        if (banKoma.at("ban")) {
+        if (banKoma.atPlace("ban")) {
             if (this.hasKomaAtMasu(banKoma.getMasu())) {
                 this.removeAtMasu(banKoma.getMasu());
             } else {
@@ -406,11 +412,11 @@ class BanKomaList {
             }
         } else {
             let list: BanKoma[] = [];
-            if (banKoma.at("senteMochiKoma")) {
+            if (banKoma.atPlace("senteMochiKoma")) {
                 list = this.getSenteMochiKomaList();
-            } else if (banKoma.at("goteMochiKoma")) {
+            } else if (banKoma.atPlace("goteMochiKoma")) {
                 list = this.getGoteMochiKomaList();
-            } else if (banKoma.at("gomibako")) {
+            } else if (banKoma.atPlace("gomibako")) {
                 list = this.getGomibakoList();
             }
 
@@ -424,7 +430,7 @@ class BanKomaList {
         }
     }
 
-    // masu にある駒を削除
+    // 盤上の masu にある駒を削除
     removeAtMasu(masu: Masu) {
         const idx = this.getIndexAtMasu(masu);
         if (idx != -1) {
@@ -453,12 +459,10 @@ class BanKomaList {
     // preClick された駒を別の place に移動する
     movePreClickBanKoma(place: Place, masu: Masu = new Masu(0, 0)) {
         // 同じ place がクリックされた場合は何もしない
-        if (place !== this.preClickPlace) {
-            const banKoma = this.pickPreClickBanKoma();
-            if (banKoma) {
-                banKoma.moveTo(place, masu);
-                this.add(banKoma);
-            }
+        if (this.preClickBanKoma && (place !== this.preClickBanKoma.getPlace())) {
+            const movedBanKoma = this.preClickBanKoma.getMoveTo(place, masu);
+            this.remove(this.preClickBanKoma);
+            this.add(movedBanKoma);
         }
 
         this.resetClick();
@@ -467,38 +471,39 @@ class BanKomaList {
     // 盤上で駒を動かす
     // Move を返す
     moveOnBan(nextMasu: Masu): Move | null {
-        const nowMasu = this.getPreClickMasu();
-        if (nowMasu && (!nowMasu.equal(nextMasu))) {
-
-            const beforeBanKoma = this.getAtMasu(nowMasu); // 移動する駒
+        if (this.preClickBanKoma && (!nextMasu.equal(this.preClickBanKoma.getMasu()))) {
             let torareAfter = null;
 
-            if (beforeBanKoma) {
+            if (this.preClickBanKoma) {
                 const torareBefore = this.getAtMasu(nextMasu); // 移動先にある駒
 
                 if (torareBefore) {
-                    if (beforeBanKoma.isSente() === torareBefore.isSente()) {
+                    if (this.preClickBanKoma.isSente() === torareBefore.isSente()) {
                         // console.log("味方の駒がある場所には移動できません。"); // debug
                         return null;
                     } else {
                         // 盤から駒を削除
-                        this.removeAtMasu(nextMasu);
+                        this.remove(torareBefore);
 
-                        if (beforeBanKoma.isSente()) {
-                            torareAfter = new BanKoma(torareBefore.getBaseKoma(), "senteMochiKoma");
-                            this.add(torareAfter);
+                        if (this.preClickBanKoma.isSente()) {
+                            torareAfter = torareBefore.getMoveTo("senteMochiKoma");
                         } else {
-                            torareAfter = new BanKoma(torareBefore.getBaseKoma(), "goteMochiKoma");
+                            torareAfter = torareBefore.getMoveTo("goteMochiKoma");
+                        }
+
+                        if (torareAfter) {
                             this.add(torareAfter);
                         }
                     }
                 }
 
                 // 駒を動かす
-                const afterBanKoma = this.getBanList()[this.getIndexAtMasu(nowMasu)].moveTo("ban", nextMasu);
+                const afterBanKoma = this.preClickBanKoma.getMoveTo("ban", nextMasu);
+                this.remove(this.preClickBanKoma);
+                this.add(afterBanKoma);
 
                 // 取った駒を返す
-                return new Move(beforeBanKoma, afterBanKoma, torareBefore, torareAfter);
+                return new Move(this.preClickBanKoma, afterBanKoma, torareBefore, torareAfter);
             } else {
                 // console.log("元の位置に駒がありません");
                 return null;
@@ -510,14 +515,12 @@ class BanKomaList {
 
     // 駒台、使わない駒置き場から盤上へ駒を動かす
     moveToBan(nextMasu: Masu): Move | null {
-        if (!this.hasKomaAtMasu(nextMasu)) {
-            const beforeBanKoma = this.pickPreClickBanKoma();
-            if (beforeBanKoma) {
-                const afterBanKoma = new BanKoma(beforeBanKoma.getKoma(), "ban", nextMasu)
-                this.add(afterBanKoma);
+        if ((!this.hasKomaAtMasu(nextMasu)) && this.preClickBanKoma) {
+            const afterBanKoma = this.preClickBanKoma.getMoveTo("ban", nextMasu);
+            this.remove(this.preClickBanKoma);
+            this.add(afterBanKoma);
 
-                return new Move(beforeBanKoma, afterBanKoma);
-            }
+            return new Move(this.preClickBanKoma, afterBanKoma);
         }
 
         return null;
@@ -588,65 +591,37 @@ class BanKomaList {
     // クリックをリセットする
     resetClick() {
         if (this.wasClicked()) {
-            this.preClickPlace = null;
-            this.preClickMasu = null;
-            this.preClickIdx = -1;
+            this.preClickBanKoma = null;
             this.resetElemClass();
         }
     }
 
     // ひとつ前にクリックされているかどうかを示す
-    wasClicked() { return (this.preClickPlace !== null); }
+    wasClicked() { return (this.preClickBanKoma !== null); }
 
     // ひとつ前に Place がクリックされているかどうかを示す
-    wasClickedAt(place: Place) { return (this.preClickPlace === place); }
-
-    // ひとつ前にクリックされたマスを返す
-    getPreClickMasu() { return this.preClickMasu; }
-
-    // ひとつ前にクリックされた駒を削除して返す
-    pickPreClickBanKoma() {
-        let banKoma = null;
-
-        if (this.preClickPlace === "ban") {
-            if (this.preClickMasu) {
-                banKoma = this.getAtMasu(this.preClickMasu);
-                this.removeAtMasu(this.preClickMasu);
-            }
-        } else {
-            if (this.preClickPlace != null) {
-                banKoma = this.getAtIdx(this.preClickPlace, this.preClickIdx);
-                this.removeAtIdx(this.preClickPlace, this.preClickIdx);
-            }
-        }
-
-        return banKoma;
-    }
+    wasClickedAt(place: Place) { return (this.preClickBanKoma?.getPlace() === place); }
 
     // 他にどこもクリックされていない状態で、新たにクリックされた場合の処理
     newClickAtMasu(event: Event, masu: Masu) {
         if (this.hasKomaAtMasu(masu)) {
-            this.preClickPlace = "ban";
-            this.preClickMasu = masu;
+            this.preClickBanKoma = this.getAtMasu(masu);
             this.setElemClass(event.target as HTMLElement);
         }
     }
 
     newClickAtSenteIdx(event: Event, index: number) {
-        this.preClickPlace = "senteMochiKoma";
-        this.preClickIdx = index;
+        this.preClickBanKoma = this.getAtIdx("senteMochiKoma", index);
         this.setElemClass(event.target as HTMLElement);
     }
 
     newClickAtGoteIdx(event: Event, index: number) {
-        this.preClickPlace = "goteMochiKoma";
-        this.preClickIdx = index;
+        this.preClickBanKoma = this.getAtIdx("goteMochiKoma", index);
         this.setElemClass(event.target as HTMLElement);
     }
 
     newClickAtGomibakoIdx(event: Event, index: number) {
-        this.preClickPlace = "gomibako";
-        this.preClickIdx = index;
+        this.preClickBanKoma = this.getAtIdx("gomibako", index);
         this.setElemClass(event.target as HTMLElement);
     }
 
@@ -769,7 +744,7 @@ class Move {
 
     // before から after に移動するとき、成れるかどうか
     canNari() {
-        if (this.before.at("ban") && this.after.at("ban") && this.before.hasUra() && this.before.isFunari()) {
+        if (this.before.atPlace("ban") && this.after.atPlace("ban") && this.before.hasUra() && this.before.isFunari()) {
             if (this.before.isSente()) {
                 return ((this.before.getDan() <= 3) || (this.after.getDan() <= 3));
             } else {
