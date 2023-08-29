@@ -249,17 +249,13 @@ function backwardHistory() {
     }
 }
 
-// 将棋盤全体を先後逆にする関数
-function sengoGyakuAll() {
-    console.log("SengoGyakuAll."); // debug
-}
-
 const viewBoxHeightEdit = 1110; // SVGの viewBox の高さ (編集モード)
 const viewBoxHeightPlay = 1060; // SVGの viewBox の高さ (操作モード)
 const viewBoxHeight = ref(viewBoxHeightEdit); // SVGの viewBox の高さ
 const viewBoxWidth = 1190; // SVGの viewBox の幅 (幅は変化しない)
 const boardWidth = ref("100%");  // 将棋盤の幅
 const editFlag = ref(true); // 使わない駒置き場を表示するかどうか
+const directionFlag = ref(true); // 盤を通常の向きにするか、先後逆にするか
 
 // 編集モードに変更
 function changeToEditMode() {
@@ -267,6 +263,7 @@ function changeToEditMode() {
         editFlag.value = true;
     }
 
+    moveList.clear();
     viewBoxHeight.value = viewBoxHeightEdit;
 }
 
@@ -279,13 +276,40 @@ function changeToPlayMode() {
     viewBoxHeight.value = viewBoxHeightPlay;
 }
 
-// divの大きさをセットする
+// svg の大きさをセットする
 function setTopDivSize(): void {
     const w = window.innerWidth;
     const h = window.innerHeight;
     const minWH = (w < h) ? w : h;
 
     boardWidth.value = `${minWH}px`;
+}
+
+// 将棋盤全体を先後逆にする関数
+function setDirection(flag: boolean) {
+    directionFlag.value = flag;
+}
+
+// 筋の数字の配列を返す
+function getSujiArray() {
+    let sujiArray: number[] = [9, 8, 7, 6, 5, 4, 3, 2, 1];
+
+    if (! directionFlag.value) {
+        sujiArray.reverse();
+    }
+
+    return sujiArray;
+}
+
+// 段の数字の配列を返す
+function getDanArray() {
+    let danArray: string[] = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+
+    if (! directionFlag.value) {
+        danArray.reverse();
+    }
+
+    return danArray;
 }
 
 // コンポーネントがマウントされる直前に呼び出されるフックを登録
@@ -319,12 +343,12 @@ onMounted(() => {
                     <rect x="0" y="0" :width="viewBoxWidth" :height="viewBoxHeight" style="fill: #8b968d;" />
 
                     <!-- 先手の持駒 -->
-                    <g transform="translate(1080, 30)">
+                    <g :transform="directionFlag ? 'translate(1080, 30)' : 'translate(10, 30)'">
                         <!-- 駒台全体 -->
                         <rect width="100" height="920" x="0" y="0" style="fill: #f7c167;" />
                         <rect @click="clickSenteKomadai" width="100" height="920" x="0" y="0" class="square" />
 
-                        <use href="#Sente" x="20" y="-30" width="60" height="60" />
+                        <use href="#Sente" x="20" y="-30" width="60" height="60" :transform="directionFlag ? '' : 'rotate(180, 50, 0)'"/>
 
                         <g transform="translate(10, 20)">
                             <!-- 持駒 -->
@@ -347,12 +371,12 @@ onMounted(() => {
                     </g>
 
                     <!-- 後手の持駒 -->
-                    <g transform="translate(10, 30)">
+                    <g :transform="directionFlag ? 'translate(10, 30)' : 'translate(1080, 30)'">
                         <!-- 駒台全体 -->
                         <rect width="100" height="920" x="0" y="0" style="fill: #f7c167;" />
                         <rect @click="clickGoteKomadai" width="100" height="920" class="square" x="0" y="0" />
 
-                        <use href="#Gote" x="20" y="-30" width="60" height="60" />
+                        <use href="#Gote" x="20" y="-30" width="60" height="60" :transform="directionFlag ? '' : 'rotate(180, 50, 0)'" />
 
                         <g transform="translate(10, 20)">
                             <!-- 持駒 -->
@@ -404,32 +428,16 @@ onMounted(() => {
                         </g>
                     </g>
 
-                    <!-- 段の数字 -->
-                    <g id="numbers-row" transform="translate(190, 30)"
+                    <!-- 筋の数字 -->
+                    <g id="numbers-suji" transform="translate(190, 30)"
                         style="text-anchor: middle; font-size: 20px; font-weight: bold;">
-                        <text x="0" y="0">9</text>
-                        <text x="100" y="0">8</text>
-                        <text x="200" y="0">7</text>
-                        <text x="300" y="0">6</text>
-                        <text x="400" y="0">5</text>
-                        <text x="500" y="0">4</text>
-                        <text x="600" y="0">3</text>
-                        <text x="700" y="0">2</text>
-                        <text x="800" y="0">1</text>
+                        <text v-for="(s, idx) in getSujiArray()" :x="idx * 100" y="0" :key="idx">{{s}}</text>
                     </g>
 
-                    <!-- 筋の数字 -->
-                    <g id="numbersc-column" transform="translate(1050, 90)"
+                    <!-- 段の数字 -->
+                    <g id="numbersc-dan" transform="translate(1050, 90)"
                         style="text-anchor: start; font-size: 20px; font-weight: bold;" dominant-baseline="central">
-                        <text x="0" y="0">一</text>
-                        <text x="0" y="100">二</text>
-                        <text x="0" y="200">三</text>
-                        <text x="0" y="300">四</text>
-                        <text x="0" y="400">五</text>
-                        <text x="0" y="500">六</text>
-                        <text x="0" y="600">七</text>
-                        <text x="0" y="700">八</text>
-                        <text x="0" y="800">九</text>
+                        <text v-for="(s, idx) in getDanArray()" x="0" :y="idx * 100" :key="idx">{{s}}</text>
                     </g>
 
                     <!-- 盤面 -->
@@ -441,15 +449,15 @@ onMounted(() => {
                             <g>
                                 <!-- マス目よりも駒を先に追加して、マス目が上にくるようにする -->
                                 <use width="100" height="100" v-for="bk in banKomaList.getBanList()"
-                                    :x="(9 - bk.getSuji()) * 100" :y="(bk.getDan() - 1) * 100" :href="bk.getSymbolid()"
-                                    :key="bk.getKey()" />
+                                    :x="bk.getX(directionFlag, 100)" :y="bk.getY(directionFlag, 100)" :href="bk.getSymbolid()"
+                                    :key="bk.getKey()" :transform="directionFlag ? '' : `rotate(180, ${bk.getX(directionFlag, 100) + 50}, ${bk.getY(directionFlag, 100) + 50})`" />
                             </g>
 
                             <g style="stroke: black; stroke-width: 2;">
                                 <rect v-for="ms in masuList.getList()" @click.left="clickMasu($event, ms)"
                                     @click.right.prevent="rightClickMasu($event, ms)" width="100" height="100"
-                                    class="square" :key="ms.getKey()" :x="(9 - ms.getSuji()) * 100"
-                                    :y="(ms.getDan() - 1) * 100" />
+                                    class="square" :key="ms.getKey()" :x="ms.getX(directionFlag, 100)"
+                                    :y="ms.getY(directionFlag, 100)" />
 
                                 <use href="#stars" x="300" y="300" />
                                 <use href="#stars" x="600" y="300" />
@@ -490,25 +498,35 @@ onMounted(() => {
 
             <div class="col">
                 <!-- 操作パネル -->
-                <div class="btn-group my-2 mx-1" role="group" aria-label="Basic radio toggle button group">
-                    <input @click="changeToEditMode" type="radio" class="btn-check" name="btnradio" id="btnradio1"
-                        autocomplete="off" checked>
-                    <label class="btn btn-outline-primary" for="btnradio1">編集モード</label>
+                <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
 
-                    <input @click="changeToPlayMode" type="radio" class="btn-check" name="btnradio" id="btnradio2"
-                        autocomplete="off">
-                    <label class="btn btn-outline-primary" for="btnradio2">操作モード</label>
+                    <div class="btn-group my-2 mx-1" role="group" aria-label="First group">
+                        <input @click="changeToEditMode" type="radio" class="btn-check" name="btnradio" id="btnradio1"
+                            autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="btnradio1">編集モード</label>
+
+                        <input @click="changeToPlayMode" type="radio" class="btn-check" name="btnradio" id="btnradio2"
+                            autocomplete="off">
+                        <label class="btn btn-outline-primary" for="btnradio2">操作モード</label>
+                    </div>
+
+                    <div class="btn-group my-2 mx-1" role="group" aria-label="Second group">
+                        <input @click="setDirection(true)" type="radio" class="btn-check" name="btnradioDirection" id="btnradio3"
+                            autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="btnradio3">通常</label>
+
+                        <input @click="setDirection(false)" type="radio" class="btn-check" name="btnradioDirection" id="btnradio4"
+                            autocomplete="off">
+                        <label class="btn btn-outline-primary" for="btnradio4">先後逆 &circlearrowleft;</label>
+                    </div>
+
                 </div>
 
-                <div class="form-check form-switch fs-4 mx-2 my-2">
-                    <input class="form-check-input" type="checkbox" role="switch" id="sengoGyakuCheck">
-                    <label class="form-check-label text-primary" for="sengoGyakuCheck">先後逆 &circlearrowleft;</label>
-                </div>
-
-                <div  v-if="!editFlag" class="mb-2">
-                    <button :disabled="! moveList.hasBackward()" type="button" class="btn btn-primary btn-lg mx-1"
+                <div v-if="!editFlag" class="mb-2">
+                    <button :disabled="!moveList.hasBackward()" type="button" class="btn btn-primary mx-1"
                         @click="backwardHistory">&DoubleLeftArrow; 戻る</button>
-                    <button :disabled="! moveList.hasForward()" type="button" class="btn btn-primary btn-lg mx-1" @click="forwardHistory">進む
+                    <button :disabled="!moveList.hasForward()" type="button" class="btn btn-primary mx-1"
+                        @click="forwardHistory">進む
                         &DoubleRightArrow;</button>
                 </div>
             </div>

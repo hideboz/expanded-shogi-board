@@ -36,6 +36,22 @@ class Masu {
     getDan() { return this.dan; }
     getKey() { return `Masu-${this.suji}${this.dan}`; }
 
+    getX(directionFlag: boolean, step: number) {
+        if (directionFlag) {
+            return (9 - this.getSuji()) * step;
+        }
+
+        return (this.getSuji() - 1) * step;
+    }
+
+    getY(directionFlag: boolean, step: number) {
+        if (directionFlag) {
+            return (this.getDan() - 1) * step;
+        }
+
+        return (9 - this.getDan()) * step;
+    }
+
     equal(masu: Masu) { return ((masu.suji === this.suji) && (masu.dan === this.dan)); }
 
     toString() { return `${this.suji} ${this.dan}`; }
@@ -336,6 +352,22 @@ class BanKoma {
     getMasu() { return this.masu.getCopy(); }
     getSuji() { return this.masu.getSuji(); }
     getDan() { return this.masu.getDan(); }
+
+    getX(directionFlag: boolean, step: number) {
+        if (directionFlag) {
+            return (9 - this.getSuji()) * step;
+        }
+
+        return (this.getSuji() - 1) * step;
+    }
+
+    getY(directionFlag: boolean, step: number) {
+        if (directionFlag) {
+            return (this.getDan() - 1) * step;
+        }
+
+        return (9 - this.getDan()) * step;
+    }
 
     nInc() { this.n++; }
     nDec() { this.n--; }
@@ -770,6 +802,11 @@ class MoveList {
     moveList: Move[] = [];
     lastPosition: number = -1; // 最後に返した位置
 
+    clear() {
+        this.moveList = [];
+        this.lastPosition = -1;
+    }
+
     add(newMove: Move) {
         this.lastPosition += 1;
 
@@ -789,7 +826,7 @@ class MoveList {
     lastToNari() {
         if (this.lastPosition != -1) {
             this.moveList[this.lastPosition].afterToNari();
-            console.log(this.moveList[this.lastPosition].toString()); // debug
+            // console.log(this.moveList[this.lastPosition].toString()); // debug
         }
     }
 
