@@ -478,7 +478,7 @@ onMounted(() => {
                         <g transform="translate(0, 0)" v-if="rightClickMenu.hasUra()">.
                             <rect width="120" height="110" style="fill: #666666; fill-opacity: 0.9;" />
                             <g transform="translate(10, 10)">
-                                <use width="100" height="100" :href="rightClickMenu.getKomaUraId()" />
+                                <use width="100" height="100" :href="rightClickMenu.getKomaUraId()" :transform="directionFlag ? '' : 'rotate(180, 50, 50)'" />
                                 <rect width="100" height="100" class="square" @click="clickSetUra" />
                             </g>
                         </g>
@@ -487,7 +487,7 @@ onMounted(() => {
                         <g :transform="'translate(0, ' + (rightClickMenu.hasUra() ? 110 : 0) + ')'">
                             <rect width="120" height="120" style="fill: #666666; fill-opacity: 0.9;" />
                             <g transform="translate(10, 10)">
-                                <use width="100" height="100" :href="rightClickMenu.getKomaSengoGyakuId()" />
+                                <use width="100" height="100" :href="rightClickMenu.getKomaSengoGyakuId()" :transform="directionFlag ? '' : 'rotate(180, 50, 50)'" />
                                 <rect width="100" height="100" class="square" @click="clickSetSengoGyaku" />
                             </g>
                         </g>
