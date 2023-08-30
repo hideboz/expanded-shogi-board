@@ -1,0 +1,82 @@
+<!-- Help page.
+    Copyright (C) 2023 Hideaki Sakai
+    
+    This file is part of Expanded-Shogi-Board.
+    
+    Expanded-Shogi-Board is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    Expanded-Shogi-Board is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+    
+    You should have received a copy of the GNU Affero General Public License
+    along with Expanded-Shogi-Board.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ちょっと便利な将棋盤 ヘルプページ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>ちょっと便利な将棋盤 ヘルプページ</h1>
+
+        <main class="mt-5">
+            <h2>概要</h2>
+
+            <p>
+                「ちょっと便利な将棋盤」は、言葉の通り、実際の将棋盤よりもちょっと便利に使える将棋盤を目指して開発したものです。盤の右側に表示されている、盤と同じ色の縦長の領域が先手の駒台、左側に表示されているのが後手の駒台です。盤の下側または右側に表示されているのが、モードを切り替えるボタンと、盤の向きを切り替えるボタンです。
+            </p>
+
+            <h2 class="mt-4">基本操作</h2>
+
+            <p>
+                駒を動かすには、まず動かしたい駒をクリックした後、動かす先をクリックしてください。
+                「<span class="text-primary">編集モード</span>」と「<span
+                    class="text-primary">操作モード</span>」の切り替えボタンをクリックすると、モードを切り替えることができます。
+                「<span class="text-primary">通常の向き</span>」と「<span
+                    class="text-primary">先後逆向き</span>」の切り替えボタンをクリックすると、将棋盤の向きを逆向きにしたり、戻したりすることができます。
+            </p>
+
+            <h2 class="mt-4">編集モード</h2>
+
+            <p>
+                「<span class="text-primary">編集モード</span>」は、盤面を好きなように編集したいときに使うモードです。「<span
+                    class="text-primary">編集モード</span>」に切り替えると、盤のすぐ下に「使わない駒置き場」が表示されるようになります。駒を盤上で動かすだけでなく、盤、先手と後手の駒台、使わない駒置き場の間で好きに移動することができます。また、盤上の駒を右クリックすると、成りにしたり、駒の向きを先手後手逆にしたり、王と玉を入れ替えたりすることができます。
+            </p>
+
+            <h2 class="mt-4">操作モード</h2>
+
+            <p>
+                「<span class="text-primary">操作モード</span>」に切り替えると、「<span class="text-primary">&DoubleLeftArrow; 戻る</span>」と「<span class="text-primary">進む
+                &DoubleRightArrow;</span>」ボタンが表示されるようになります。「<span
+                    class="text-primary">操作モード</span>」においては、実際に将棋を指すときと同様に、駒を動かせるのは、盤上で動かすこと、相手の駒を取ること、駒台の駒を打つことのみになります。また、駒が成れる場合は、自動的に成りか不成かを尋ねるメニューが表示されます。「<span
+                    class="text-primary">操作モード</span>」で駒を動かすと、駒の動きが履歴に保存されて、「<span class="text-primary">&DoubleLeftArrow; 戻る</span>」と「<span class="text-primary">進む
+                &DoubleRightArrow;</span>」ボタンで履歴を辿ることができます。「<span class="text-primary">編集モード</span>」に切り替えると、「<span
+                    class="text-primary">操作モード</span>」で保存された履歴は削除されlます。
+            </p>
+        </main>
+
+        <footer>
+        <p class="mt-5 text-secondary">Copyright (C) 2023 Hideaki Sakai</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

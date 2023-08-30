@@ -513,16 +513,16 @@ onMounted(() => {
                     <div class="btn-group my-2 mx-1" role="group" aria-label="Second group">
                         <input @click="setDirection(true)" type="radio" class="btn-check" name="btnradioDirection" id="btnradio3"
                             autocomplete="off" checked>
-                        <label class="btn btn-outline-primary" for="btnradio3">通常</label>
+                        <label class="btn btn-outline-primary" for="btnradio3">通常の向き</label>
 
                         <input @click="setDirection(false)" type="radio" class="btn-check" name="btnradioDirection" id="btnradio4"
                             autocomplete="off">
-                        <label class="btn btn-outline-primary" for="btnradio4">先後逆 &circlearrowleft;</label>
+                        <label class="btn btn-outline-primary" for="btnradio4">先後逆向き</label>
                     </div>
 
                 </div>
 
-                <div v-if="!editFlag" class="mb-2">
+                <div v-if="!editFlag" class="my-2">
                     <button :disabled="!moveList.hasBackward()" type="button" class="btn btn-primary mx-1"
                         @click="backwardHistory">&DoubleLeftArrow; 戻る</button>
                     <button :disabled="!moveList.hasForward()" type="button" class="btn btn-primary mx-1"
