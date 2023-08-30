@@ -8,7 +8,7 @@ See the end of the file for license conditions.
 「**ちょっと便利な将棋盤**」は、言葉の通り、実際の将棋盤よりもちょっと便利に使える将棋盤を目指して開発したものです。盤の右側に表示されている、盤と同じ色の縦長の領域が先手の駒台、左側に表示されているのが後手の駒台です。盤の下側または右側に表示されているのが、モードを切り替えるボタンと、盤の向きを切り替えるボタンです。 
 [Vue.js](https://ja.vuejs.org/) (TypeScript) と[SVG](https://developer.mozilla.org/ja/docs/Web/SVG)を利用して開発しました。
 
-[GitHub Pages のウェブページ](https://hideboz.github.io/Expanded-Shogi-Board/) でご試用いただけます。
+[https://shogi-board.crestboz.co.jp/](https://shogi-board.crestboz.co.jp/) でご利用いただけます。
 
 ![ちょっと便利な将棋盤のスクリーンショット](images/expanded-shogi-board-screenshot.png)
 
